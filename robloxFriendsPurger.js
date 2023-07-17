@@ -1,52 +1,49 @@
-let friends = 0;
-let removed = 0;
-let csrf_token = '';
-let userId = '';
+let vars = {friends: 0, friends_removed: 0, csrf_token: "", user_id: ""}
 
-fetch('https://www.roblox.com/my/account/json', { credentials: 'include' })
-    .then(response => response.json())
-    .then(data => {
-        userId = data['UserId'];
-        
-        fetch('https://friends.roblox.com/v1/my/friends/count', { credentials: 'include' })
-            .then(response => response.json())
-            .then(data => {
-                friends = data['count'];
-                
-                fetch('https://auth.roblox.com/v2/login', { method: 'POST', credentials: 'include' })
-                    .then(response => {
-                        csrf_token = response.headers.get('x-csrf-token');
-                        if (friends >= 1) {
-                            console.log(`[DELETER] => Deleting ${friends} friends on the account..`);
-                            const removeFriends = () => {
-                                fetch(`https://friends.roblox.com/v1/users/${userId}/friends`, { credentials: 'include' })
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        for (let friend of data["data"]) {
-                                            let friend_id = friend["id"];
-                                            fetch(`https://friends.roblox.com/v1/users/${friend_id}/unfriend`, {
-                                                method: 'POST',
-                                                headers: {
-                                                    'X-CSRF-TOKEN': csrf_token
-                                                },
-                                                credentials: 'include'
-                                            })
-                                                .then(response => {
-                                                    if (response.ok) {
-                                                        removed += 1;
-                                                        console.log(`[${removed}/${friends}] Successfully unfriended ${friend_id}`);
-                                                        removeFriends();
-                                                    } else {
-                                                        console.log(`[${removed}/${friends}] Unable to unfriend ${friend_id}`);
-                                                    }
-                                                });
-                                        }
-                                    });
-                            };
-                            removeFriends();
-                        } else {
-                            console.log('[DELETER] => Account has no friends, proceeding to next procedure');
-                        }
-                    });
-            });
-    });
+const _fetch = async (url, data) => {
+    const response = await fetch(url, data)
+    if (!response.ok) {
+        throw new Error(`[DELETER] Error with URL: ${url} (${response.status})`)
+    }
+    return await response.json()
+}
+
+const unfriend = async (friend) => {
+
+    const response = await _fetch(`https://friends.roblox.com/v1/users/${friend.id}/unfriend`, {method: "POST", headers: {"X-CSRF-TOKEN": vars.csrf_token}, credentials: "include"})
+
+    if (response.ok) {
+        vars.friends_removed += 1
+        console.log(`[DELETER] [${vars.friends_removed}/${vars.friends}] Successfully unfriended ${friend.id}`)
+        return true
+    } else {
+        console.log(`[DELETER] [${vars.friends_removed}/${vars.friends}] Unable to unfriend ${friend.id}`)
+        return false
+    }
+}
+
+const delete_friends = async () => {
+    const {data} = await _fetch(`https://friends.roblox.com/v1/users/${vars.user_id}/friends`, {credentials: "include"})
+    await Promise.all(data.map(unfriend))
+}
+
+const main = async () => {
+    try {
+        vars.csrf_token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("data-token") || console.log("[DELETER] Unable to fetch CSRF Token")
+
+        const {UserId} = await _fetch("https://www.roblox.com/my/account/json", {credentials: "include"})
+        vars.user_id = UserId
+
+        const {count} = await _fetch("https://friends.roblox.com/v1/my/friends/count", {credentials: "include"})
+        vars.friends = count
+
+        if (vars.friends >= 1) {
+            console.log(`[DELETER] => Deleting ${vars.friends} friends on the account..`)
+            await delete_friends()
+        } else {
+            console.log("[DELETER] => Account has no friends, proceeding to next procedure")
+        }
+    } catch (error) {console.error(`[DELETER] ${error}`)}
+}
+
+main()
