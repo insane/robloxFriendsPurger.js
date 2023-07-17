@@ -25,7 +25,7 @@ const delete_friends = async () => {
     await Promise.all(data.map(unfriend))
 }
 
-const main = async () => {
+(async () => {
     try {
 
         vars.csrf_token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("data-token") || console.log("[DELETER] Unable to fetch CSRF Token")
@@ -44,6 +44,4 @@ const main = async () => {
         }
         
     } catch (error) {console.error(`[DELETER] ${error}`)}
-}
-
-main()
+})()
