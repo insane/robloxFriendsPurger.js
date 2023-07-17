@@ -1,9 +1,9 @@
-let vars = {friends: 0, friends_removed: 0, csrf_token: "", user_id: ""}
+let vars = {friends: null, friends_removed: null, csrf_token: null, user_id: null}
 
 const _fetch = async (url, data) => {
     const response = await fetch(url, data)
     if (!response.ok) {
-        throw new Error(`[DELETER] Error with URL: ${url} (${response.status})`)
+        throw new Error(`[DELETER] Error fetching URL: ${url} (${response.status})`)
     }
     return await response.json()
 }
@@ -12,13 +12,11 @@ const unfriend = async (friend) => {
 
     const response = await _fetch(`https://friends.roblox.com/v1/users/${friend.id}/unfriend`, {method: "POST", headers: {"X-CSRF-TOKEN": vars.csrf_token}, credentials: "include"})
 
-    if (response.ok) {
+    if (Object.keys(response).length === 0) {
         vars.friends_removed += 1
         console.log(`[DELETER] [${vars.friends_removed}/${vars.friends}] Successfully unfriended ${friend.id}`)
-        return true
     } else {
         console.log(`[DELETER] [${vars.friends_removed}/${vars.friends}] Unable to unfriend ${friend.id}`)
-        return false
     }
 }
 
@@ -29,6 +27,7 @@ const delete_friends = async () => {
 
 const main = async () => {
     try {
+
         vars.csrf_token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("data-token") || console.log("[DELETER] Unable to fetch CSRF Token")
 
         const {UserId} = await _fetch("https://www.roblox.com/my/account/json", {credentials: "include"})
@@ -43,6 +42,7 @@ const main = async () => {
         } else {
             console.log("[DELETER] => Account has no friends, proceeding to next procedure")
         }
+        
     } catch (error) {console.error(`[DELETER] ${error}`)}
 }
 
