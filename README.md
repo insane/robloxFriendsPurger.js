@@ -1,4 +1,4 @@
-# Roblox Friends Purger (Console Script)
+# Roblox Friends Purger
 
 Bulk-unfriend **all friends** from a target Roblox account (e.g., your own) directly from the browser console.  
 The script safely acquires a CSRF token, enumerates the entire friends list with pagination, and unfriends each user with progress logging and optional throttling.
